@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+
+# Version file (auto-generated during build)
+membrane_kymograph/_version.py
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+*.whl
+*.tar.gz
+
+# Output files
+Kymo_Processed_Data/
+Kymo_Temporary_Images/
+*.png
+!memkymo.png
+*.svg
+*.pdf
+*.xlsx
+*.npy
+!membrane_kymograph/example/*.png
+!membrane_kymograph/example/*.svg
+!membrane_kymograph/example/*.tif
+
+# Config files (user-specific)
+*.ini
+!example_data_config/*.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyInstaller
+build/
+*.manifest
+# dist/ already excluded above
