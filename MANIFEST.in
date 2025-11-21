@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include membrane_kymograph/example *.tif *.ini *.png *.svg
+recursive-include membrane_kymograph/tests *.py *.md
+exclude membrane_kymograph/__pycache__/*
+exclude membrane_kymograph/*/__pycache__/*
+global-exclude *.pyc
+global-exclude __pycache__
