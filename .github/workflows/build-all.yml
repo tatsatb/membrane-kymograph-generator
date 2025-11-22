@@ -1,0 +1,396 @@
+name: Build Executables and create releases across platforms
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v0.0.1
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      version:
+        description: 'Version tag (e.g., v0.0.1)'
+        required: false
+        default: 'dev'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} ${{ matrix.arch && format('({0})', matrix.arch) || '' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04  # Ubuntu 22.04 for GLIBC compatibility (x86_64)
+            platform: linux
+            arch: x64
+          - os: ubuntu-22.04-arm  # Ubuntu 22.04 ARM64
+            platform: linux
+            arch: arm64
+          - os: macos-13  # Intel Mac (x86_64)
+            platform: macos
+            arch: x64
+          - os: macos-latest  # Apple Silicon Mac (arm64)
+            platform: macos
+            arch: arm64
+          - os: windows-latest
+            platform: windows
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+    
+    - name: Verify icons directory
+      shell: bash
+      run: |
+        echo "Checking for icons directory..."
+        if [ -d "icons" ]; then
+          echo "✓ Icons directory found"
+          ls -lh icons/
+        else
+          echo "⚠ Warning: icons directory not found - will use default icons"
+        fi
+    
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.10'
+    
+    - name: Install system dependencies (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk fuse libfuse2
+    
+    - name: Install system dependencies (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        brew install python-tk@3.10 create-dmg || true
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Pre-build matplotlib font cache (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        python -c "import matplotlib.pyplot as plt; plt.figure()" || echo "Font cache build attempted"
+    
+    - name: Build executable with PyInstaller (Linux/macOS)
+      if: matrix.platform != 'windows'
+      env:
+        MPLBACKEND: Agg  # Use non-interactive backend to avoid font cache issues
+      run: |
+        pyinstaller membrane-kymograph.spec --clean --noconfirm
+    
+    - name: Build executable with PyInstaller (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        pyinstaller membrane-kymograph.spec --clean --noconfirm
+    
+    - name: Get version tag
+      id: get_version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        elif [[ "${{ github.event.inputs.version }}" != "" ]]; then
+          VERSION=${{ github.event.inputs.version }}
+        else
+          VERSION=dev-$(git rev-parse --short HEAD)
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Create distribution archive (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        ARCH=${{ matrix.arch || 'x64' }}
+        RELEASE_NAME="membrane-kymograph-${{ steps.get_version.outputs.VERSION }}-linux-${ARCH}"
+        
+        # Create a clean release directory
+        mkdir -p "dist/${RELEASE_NAME}"
+        
+        # Copy application
+        cp -r dist/membrane-kymograph "dist/${RELEASE_NAME}/"
+        
+        # Copy install/uninstall scripts
+        cp install.sh "dist/${RELEASE_NAME}/"
+        cp uninstall.sh "dist/${RELEASE_NAME}/"
+        chmod +x "dist/${RELEASE_NAME}/install.sh"
+        chmod +x "dist/${RELEASE_NAME}/uninstall.sh"
+        
+        # Copy icons directory if it exists
+        if [ -d "icons" ]; then
+          cp -r icons "dist/${RELEASE_NAME}/"
+        fi
+        
+        # Create tarball from parent directory (so it creates a folder when extracted)
+        cd dist
+        tar -czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}/"
+        
+        # Clean up the temporary directory
+        rm -rf "${RELEASE_NAME}"
+        cd ..
+    
+    - name: Create distribution archive (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        cd dist
+        ARCH=${{ matrix.arch || 'x64' }}
+        tar -czf membrane-kymograph-${{ steps.get_version.outputs.VERSION }}-macos-${ARCH}.tar.gz membrane-kymograph/
+        cd ..
+    
+    - name: Create distribution archive (Windows)
+      if: matrix.platform == 'windows'
+      shell: bash
+      run: |
+        cd dist
+        7z a -tzip membrane-kymograph-${{ steps.get_version.outputs.VERSION }}-windows-x64.zip membrane-kymograph/
+        cd ..
+    
+    # Create platform-specific installers
+    
+    - name: Create Linux AppImage
+      if: matrix.platform == 'linux'
+      run: |
+        chmod +x create_appimage.sh
+        # Update VERSION in script to match git tag
+        sed -i "s/VERSION=\".*\"/VERSION=\"${{ steps.get_version.outputs.VERSION }}\"/" create_appimage.sh
+        ./create_appimage.sh
+    
+    - name: Install Inno Setup (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        choco install innosetup -y
+    
+    - name: Create Windows Installer
+      if: matrix.platform == 'windows'
+      shell: pwsh
+      run: |
+        # Update version in Inno Setup script
+        $version = "${{ steps.get_version.outputs.VERSION }}".TrimStart('v')
+        (Get-Content installer-windows.iss) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$version`"" | Set-Content installer-windows.iss
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer-windows.iss
+    
+    - name: Create macOS DMG
+      if: matrix.platform == 'macos'
+      run: |
+        chmod +x create_dmg.sh
+        # Update VERSION in script to match git tag
+        sed -i '' "s/VERSION=\".*\"/VERSION=\"${{ steps.get_version.outputs.VERSION }}\"/" create_dmg.sh
+        ./create_dmg.sh
+    
+    - name: Test executable (Linux/macOS)
+      if: matrix.platform != 'windows'
+      timeout-minutes: 2
+      run: |
+        # Check if executable exists and is executable
+        if [ -x dist/membrane-kymograph/membrane-kymograph ]; then
+          echo "✓ Executable exists and is executable"
+          file dist/membrane-kymograph/membrane-kymograph
+        else
+          echo "✗ Executable not found or not executable"
+          exit 1
+        fi
+    
+    - name: Test executable (Windows)
+      if: matrix.platform == 'windows'
+      shell: bash
+      run: |
+        # Check if executable exists
+        if [ -f dist/membrane-kymograph/membrane-kymograph.exe ]; then
+          echo "✓ Executable exists"
+          ls -lh dist/membrane-kymograph/membrane-kymograph.exe
+        else
+          echo "✗ Executable not found"
+          exit 1
+        fi
+    
+    - name: Upload Linux artifact
+      if: matrix.platform == 'linux'
+      uses: actions/upload-artifact@v5
+      with:
+        name: membrane-kymograph-linux-${{ matrix.arch || 'x64' }}
+        path: |
+          dist/*.tar.gz
+          installers/*.AppImage
+        retention-days: 2
+    
+    - name: Upload macOS artifact
+      if: matrix.platform == 'macos'
+      uses: actions/upload-artifact@v5
+      with:
+        name: membrane-kymograph-macos-${{ matrix.arch || 'x64' }}
+        path: |
+          dist/*.tar.gz
+          installers/*.dmg
+        retention-days: 2
+    
+    - name: Upload Windows artifact
+      if: matrix.platform == 'windows'
+      uses: actions/upload-artifact@v5
+      with:
+        name: membrane-kymograph-windows-x64
+        path: |
+          dist/*.zip
+          installers/*.exe
+        retention-days: 2
+    
+    - name: Get file info
+      shell: bash
+      run: |
+        echo "=== Build Artifacts ==="
+        ls -lh dist/
+        echo ""
+        echo "=== Executable Directory ==="
+        du -sh dist/membrane-kymograph/
+        if [ "${{ matrix.platform }}" != "windows" ]; then
+          echo ""
+          echo "=== Executable Info ==="
+          file dist/membrane-kymograph/membrane-kymograph
+        fi
+
+  create-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v5
+      with:
+        path: artifacts/
+    
+    - name: Display structure of downloaded files
+      run: |
+        ls -R artifacts/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/**/*.tar.gz
+          artifacts/**/*.zip
+          artifacts/**/*.AppImage
+          artifacts/**/*.dmg
+          artifacts/**/*.exe
+        body: |
+          ## Membrane Kymograph Generator - Release ${{ github.ref_name }}
+          
+          Standalone executables and installers for Linux, macOS, and Windows. No Python installation is required! The software will run on both x86_64 and ARM64 architectures.
+          
+          ### 🎁 Easy Install (Recommended)
+          **Windows Installer:**
+          - 🪟 `membrane-kymograph-${{ github.ref_name }}-windows-x64-installer.exe` (Recommended)
+            - Double-click to install
+            - ** If blocked by SmartScreen ("Windows protected your PC"), click "More info" → "Run anyway" → "Yes" to proceed.** 
+            - Automatic Start Menu integration and desktop shortcut creation
+            - Professional installer with uninstaller that should work on both x86_64 and ARM64 Windows systems. 
+          
+          **macOS Disk Images:**
+          - 🍎 `membrane-kymograph-${{ github.ref_name }}-macos-x64.dmg` (Intel Macs)
+          - 🍎 `membrane-kymograph-${{ github.ref_name }}-macos-arm64.dmg` (Apple Silicon M1/M2/M3)
+            - Mount the DMG and drag to Applications
+            - Native .app bundle
+            - First launch: Right-click → Open if blocked by Gatekeeper
+          
+          **Linux AppImage:**
+          - 🐧 `membrane-kymograph-${{ github.ref_name }}-linux-x86_64.AppImage` (x64, Portable)
+          - 🐧 `membrane-kymograph-${{ github.ref_name }}-linux-aarch64.AppImage` (ARM64, Portable)
+            - Make executable: `chmod +x membrane-kymograph-*.AppImage`
+            - Run directly: `./membrane-kymograph-*.AppImage`
+            - No installation needed, runs in all major Linux distributions (Ubuntu, Debian, Fedora, Arch Linux etc.).
+            - Note: If you have never used AppImage before in your system and having issues running our software, you may need to install FUSE (something like `libfuse2` package). For Ubuntu, please just use `sudo apt-get install libfuse2`. For specific instructions on other distros, please see [AppImage documentation](https://github.com/appimage/appimagekit/wiki/fuse).
+          
+          ### 📦 Manual Archives (Portable, slightly advanced)
+          
+          For manual installation or custom deployments:
+
+          - **Linux x64**: `membrane-kymograph-${{ github.ref_name }}-linux-x64.tar.gz`
+          - **Linux ARM64**: `membrane-kymograph-${{ github.ref_name }}-linux-arm64.tar.gz`
+          - **macOS Intel**: `membrane-kymograph-${{ github.ref_name }}-macos-x64.tar.gz`
+          - **macOS Apple Silicon**: `membrane-kymograph-${{ github.ref_name }}-macos-arm64.tar.gz`
+          - **Windows**: `membrane-kymograph-${{ github.ref_name }}-windows-x64.zip`
+          
+          **Linux tarball includes:**
+          - `install.sh` - System-wide installation script (installs to /opt, creates desktop entry)
+          - `uninstall.sh` - Removal script
+          - `membrane-kymograph/` - Application directory
+          - `icons/` - Application icons
+          
+          In addition to directly running the application from membrane-kymograph, you can install it system-wide in Linux environments, using the provided `install.sh` script:
+          
+          ```bash
+          # Extract tarball
+          tar -xzf membrane-kymograph-${{ github.ref_name }}-linux-x64.tar.gz
+          cd membrane-kymograph-${{ github.ref_name }}-linux-x64
+          
+          # Option 1: System-wide installation (recommended)
+          sudo ./install.sh
+          # Creates desktop entry, installs to /opt, adds to PATH
+          
+          # Option 2: Run directly without installation
+          ./membrane-kymograph/membrane-kymograph
+          
+          # Uninstall (if installed system-wide)
+          sudo ./uninstall.sh
+          ```
+          
+          **Other platforms:**
+          - macOS: `./membrane-kymograph/membrane-kymograph`
+          - Windows: `membrane-kymograph\membrane-kymograph.exe`
+          
+        
+          
+          ### 🔍 Which File Should I Download?
+          
+          **For most users:**
+          - Windows → `.exe` installer
+          - Mac → `.dmg` (choose x64 for Intel, arm64 for Apple Silicon)
+          - Linux → `.AppImage` (choose x86_64 for Intel/AMD, aarch64 for ARM64)
+          
+          **For advanced users or automation:**
+          - Use the `.tar.gz` or `.zip` archives
+          
+          **Check your Mac architecture:**
+          ```bash
+          uname -m
+          # x86_64 = Intel → download macos-x64.dmg
+          # arm64 = Apple Silicon → download macos-arm64.dmg
+          ```
+        
+          ### ✨ Features
+          
+          - Interactive GUI for kymograph generation
+          - Supports Multi-channel fluorescence images
+          - Multiple output formats (PNG, SVG, PDF)
+          - Kymograph adjustment and preview
+          - Automated boundary detection and smoothing
+          - Built-in correlation analysis tools
+          - Built-in Python API for advanced usages
+          
+          ### 📚 Documentation
+          
+          - [README](https://github.com/${{ github.repository }}/blob/main/README.md)
+          - [Project Wiki with detailed documentation](https://github.com/${{ github.repository }}/wiki)
+              - Quick start guide
+              - Installation instructions
+              - User guide for GUI features
+              - API reference for batch processing and advanced usages
+              - Troubleshooting tips
+          - Issue tracker for reporting bugs or requesting features: https://github.com/${{ github.repository }}/issues
+
+          ### ❤️ Thank you for trying out Membrane Kymograph Generator!
+
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

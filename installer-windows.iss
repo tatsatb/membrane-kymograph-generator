@@ -4,7 +4,7 @@
 ; Install Inno Setup from: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Membrane Kymograph Generator"
-#define MyAppVersion "0.0.1"
+#define MyAppVersion "v0.0.1"
 #define MyAppPublisher "Tatsat Banerjee"
 #define MyAppURL "https://github.com/tatsatb/membrane-kymograph-generator"
 #define MyAppExeName "membrane-kymograph.exe"
