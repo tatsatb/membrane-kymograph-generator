@@ -60,6 +60,7 @@ Kymo_Temporary_Images/
 *.png
 !memkymo.png
 *.svg
+!icons/*.svg
 *.pdf
 *.xlsx
 *.npy
