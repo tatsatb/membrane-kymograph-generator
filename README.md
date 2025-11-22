@@ -68,7 +68,7 @@ If you use this software in your research, please cite:
 
 ### 🙏 Acknowledgments
 
-Developed at the Devreotes Lab at Johns Hopkins University School of Medicine for analyzing membrane dynamics in cell motility and chemotaxis studies. 
+Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all members of both labs for their valuable feedback during the development and testing phases.
 
 ---
 
