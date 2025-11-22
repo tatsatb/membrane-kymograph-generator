@@ -42,7 +42,7 @@ No Python installation, dependency management, or programming knowledge is requi
 
 ---
 
-### 🔗 Links:
+## 🔗 Links:
 
 
 - 🔽 To download the latest version of the software, please visit the [Releases](https://github.com/tatsatb/membrane-kymograph-generator/releases).
@@ -66,13 +66,13 @@ If you use this software in your research, please cite:
 
 ---
 
-### 🙏 Acknowledgments
+## 🙏 Acknowledgments
 
 Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all members of both labs for their valuable feedback during the development and testing phases.
 
 ---
 
-### ⚖️ License:
+## ⚖️ License:
 
 Copyright © 2025 Tatsat Banerjee, Bedri Abubaker-Sharif, Peter N. Devreotes, and Pablo A. Iglesias.
 
