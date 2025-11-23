@@ -35,7 +35,7 @@ No Python installation, dependency management, or programming knowledge is requi
 - **Interactive Post-Processing**: 
   - Fine-tune color limits after processing
   - Built-in correlation analysis tool (and statistical tests) for kymograph data
-- **Native Python API**: For advanced users to enable batch processing (of large-scale datasets) and custom downstream spatiotemporal analyses (examples are provided in the [[Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Advanced-Usage:-Python-API)]).
+- **Native Python API**: For advanced users to enable batch processing (of large-scale datasets) and custom downstream spatiotemporal analyses (examples are provided in the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Advanced-Usage:-Python-API)).
 - **Cross-Platform Compatibility**: Available for both x86-64 and ARM64 systems running either Windows, macOS, and any standard Linux distribution. No installation of Python or any dependencies required. 
 
 - **Open Source**: Free and open-source under the GPL v3 License.
