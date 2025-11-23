@@ -9,11 +9,18 @@
 
 _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-based application for generating kymographs from live-cell microscopy images along dynamic cell boundaries. Starting from a time-lapse image sequence and a whole cell binary mask, it automatically extracts the boundaries, corrects for the changes in the shape and size of the boundaries (using a custom algorithm), properly aligns the boundaries between different frames, samples intensities across the boundaries, and finally generates publication-quality kymographs in various formats. 
 
+---
+
+## ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Homepage) for detailed documentation. 
+
+---
+
+
 ## 🚀 Quick Start
 
 **[Download the latest release](https://github.com/tatsatb/membrane-kymograph-generator/releases)** and check out the **[Quick Start Guide](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Homepage)** to begin generating kymographs in minutes!
 
-No Python installation, dependency management, or programming knowledge is required - just download, install (or extract, if you are using standalone binaries), and run!
+**No Python installation, dependency management, or programming knowledge is required - just download, install (or extract, if you are using standalone binaries), and run!**
 
 ---
 
