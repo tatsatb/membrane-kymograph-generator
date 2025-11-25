@@ -2,7 +2,7 @@
 
 
 <p align="center">
-<img src="icons/ICON.svg" width="280" alt="Membrane Kymograph Generator Icon">
+<img src="https://raw.githubusercontent.com/tatsatb/membrane-kymograph-generator/233f5c6074246d4c9a667ca47ee3ee1140c5786c/icons/ICON.svg" width="280" alt="Membrane Kymograph Generator Icon">
 <br/><br/>
 </p>
 
