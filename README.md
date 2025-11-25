@@ -49,7 +49,7 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 ---
 
-## 🔗 Links:
+## 🔗 Links
 
 
 - 🔽 To download the latest version of the software, please visit the [Releases](https://github.com/tatsatb/membrane-kymograph-generator/releases).
@@ -79,7 +79,7 @@ Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for 
 
 ---
 
-## ⚖️ License:
+## ⚖️ License
 
 Copyright © 2025 Tatsat Banerjee, Bedri Abubaker-Sharif, Peter N. Devreotes, and Pablo A. Iglesias.
 
