@@ -1,8 +1,9 @@
 name: Tests
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 
 jobs:
   test:

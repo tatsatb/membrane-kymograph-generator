@@ -7,10 +7,23 @@ set -e
 
 # Configuration
 APP_NAME="Membrane Kymograph"
-#Placeholder version; will be automatically updated during build process
-VERSION="0.0.1"
+VERSION="0.0.1" # Placeholder version; will be replaced during build process
+
+# Check if PyInstaller created a .app bundle (it should on macOS with BUNDLE in spec)
+PYINSTALLER_APP="dist/${APP_NAME}.app"
 PYINSTALLER_DIR="dist/membrane-kymograph"
+
+# Determine which path to use
+if [ -d "${PYINSTALLER_APP}" ]; then
+    echo "Found PyInstaller-created .app bundle at ${PYINSTALLER_APP}"
+    APP_BUNDLE_DIR="${PYINSTALLER_APP}"
+    CREATED_BY_PYINSTALLER=true
+else
+    echo "No .app bundle found, will create from directory: ${PYINSTALLER_DIR}"
 APP_BUNDLE_DIR="dist/${APP_NAME}.app"
+    CREATED_BY_PYINSTALLER=false
+fi
+
 DMG_DIR="installers"
 VOLUME_NAME="${APP_NAME} ${VERSION}"
 
@@ -26,11 +39,29 @@ DMG_NAME="membrane-kymograph-${VERSION}-macos-${ARCH_SUFFIX}.dmg"
 
 echo "Creating macOS DMG installer..."
 echo "Architecture: ${ARCH} (${ARCH_SUFFIX})"
+if [ "$CREATED_BY_PYINSTALLER" = true ]; then
+    echo "Using PyInstaller-created bundle: ${APP_BUNDLE_DIR}"
+else
 echo "Source: ${PYINSTALLER_DIR}"
+fi
 echo "Output: ${DMG_DIR}/${DMG_NAME}"
 
 # Create installers directory if it doesn't exist
 mkdir -p "${DMG_DIR}"
+
+# If PyInstaller already created the .app bundle, use it directly
+if [ "$CREATED_BY_PYINSTALLER" = true ]; then
+    echo "✓ Using PyInstaller's .app bundle (no manual bundling needed)"
+    
+    # Just update the icon if needed
+    ICON_FILE="icons/memkymo.icns"
+    if [ -f "${ICON_FILE}" ]; then
+        echo "Updating application icon..."
+        cp "${ICON_FILE}" "${APP_BUNDLE_DIR}/Contents/Resources/icon.icns"
+    fi
+else
+    # Fallback: Create .app bundle manually (old behavior)
+    echo "Creating .app bundle manually..."
 
 # Check if PyInstaller output exists
 if [ ! -d "${PYINSTALLER_DIR}" ]; then
@@ -45,10 +76,37 @@ echo "Creating .app bundle..."
 rm -rf "${APP_BUNDLE_DIR}"
 mkdir -p "${APP_BUNDLE_DIR}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE_DIR}/Contents/Resources"
+mkdir -p "${APP_BUNDLE_DIR}/Contents/Frameworks"
 
 # Copy PyInstaller output to .app bundle
 echo "Copying executable and dependencies..."
-cp -R "${PYINSTALLER_DIR}"/* "${APP_BUNDLE_DIR}/Contents/MacOS/"
+    # Copy the main executable
+    cp "${PYINSTALLER_DIR}/membrane-kymograph" "${APP_BUNDLE_DIR}/Contents/MacOS/"
+
+    # Handle PyInstaller's _internal directory structure for macOS
+    if [ -d "${PYINSTALLER_DIR}/_internal" ]; then
+        echo "Detected PyInstaller _internal directory - creating proper macOS structure..."
+        
+        # Copy _internal to MacOS (where the executable can find it)
+        cp -R "${PYINSTALLER_DIR}/_internal" "${APP_BUNDLE_DIR}/Contents/MacOS/"
+        
+        # Copy all .dylib files to Frameworks/ (PyInstaller looks for them there)
+        echo "Copying dynamic libraries to Frameworks..."
+        find "${PYINSTALLER_DIR}/_internal" -name "*.dylib" -exec cp {} "${APP_BUNDLE_DIR}/Contents/Frameworks/" \;
+        find "${PYINSTALLER_DIR}/_internal" -name "*.so" -exec cp {} "${APP_BUNDLE_DIR}/Contents/Frameworks/" \;
+        
+        # Also copy Python framework if it exists
+        if [ -f "${PYINSTALLER_DIR}/_internal/libpython"*.dylib ]; then
+            cp "${PYINSTALLER_DIR}/_internal/libpython"*.dylib "${APP_BUNDLE_DIR}/Contents/Frameworks/" 2>/dev/null || true
+        fi
+    else
+        # Fallback: copy everything
+        echo "Copying all files (older PyInstaller structure)..."
+        rsync -av --exclude 'membrane-kymograph' "${PYINSTALLER_DIR}/" "${APP_BUNDLE_DIR}/Contents/MacOS/"
+        
+        # Copy dylibs to Frameworks as well
+        find "${APP_BUNDLE_DIR}/Contents/MacOS" -name "*.dylib" -exec cp {} "${APP_BUNDLE_DIR}/Contents/Frameworks/" \; 2>/dev/null || true
+    fi
 
 # Ensure all copied files are fully written
 sync
@@ -103,6 +161,7 @@ EOF
 
 # Make executable
 chmod +x "${APP_BUNDLE_DIR}/Contents/MacOS/membrane-kymograph"
+fi
 
 # Ensure all writes are flushed to disk before creating DMG
 sync
@@ -123,9 +182,16 @@ if ! command -v create-dmg &> /dev/null; then
     rm -f "${TEMP_DMG}" "${DMG_DIR}/${DMG_NAME}"
     
     # Create temporary directory for DMG contents
+    # Use ditto to preserve all metadata and symlinks
     TEMP_DIR=$(mktemp -d)
-    cp -R "${APP_BUNDLE_DIR}" "${TEMP_DIR}/"
+    ditto "${APP_BUNDLE_DIR}" "${TEMP_DIR}/$(basename "${APP_BUNDLE_DIR}")"
     ln -s /Applications "${TEMP_DIR}/Applications"
+    
+    # Copy quarantine fix script if it exists
+    if [ -f "fix_quarantine.sh" ]; then
+        cp "fix_quarantine.sh" "${TEMP_DIR}/"
+        chmod +x "${TEMP_DIR}/fix_quarantine.sh"
+    fi
     
     # Create README
     cat > "${TEMP_DIR}/README.txt" << EOF
@@ -179,8 +245,9 @@ else
     # (create-dmg sometimes has issues with locked files in CI environments)
     
     # Create a clean temporary directory with just the .app bundle
+    # Use ditto instead of cp to preserve all metadata, permissions, and symlinks
     TEMP_SOURCE=$(mktemp -d)
-    cp -R "${APP_BUNDLE_DIR}" "${TEMP_SOURCE}/"
+    ditto "${APP_BUNDLE_DIR}" "${TEMP_SOURCE}/$(basename "${APP_BUNDLE_DIR}")"
     
     MAX_TRIES=10
     ATTEMPT=0
@@ -240,7 +307,7 @@ else
         find "${DMG_DIR}" -name "rw.*.dmg" -delete 2>/dev/null || true
         
         TEMP_DIR=$(mktemp -d)
-        cp -R "${APP_BUNDLE_DIR}" "${TEMP_DIR}/"
+        ditto "${APP_BUNDLE_DIR}" "${TEMP_DIR}/$(basename "${APP_BUNDLE_DIR}")"
         ln -s /Applications "${TEMP_DIR}/Applications"
         
         # Create README for fallback DMG

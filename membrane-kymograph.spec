@@ -9,6 +9,33 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 import os
 import platform
 
+# Get version dynamically from git tags
+def get_app_version():
+    """Get version from git tags."""
+    import subprocess
+    try:
+        version = subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        # Remove 'v' prefix if present (e.g., v0.0.45 -> 0.0.45)
+        version = version.lstrip("v")
+        print(f"Building version: {version}")
+        
+        # Create _version.py file to bundle with the app
+        version_file = os.path.join('membrane_kymograph', '_version.py')
+        with open(version_file, 'w') as f:
+            f.write(f'__version__ = "{version}"\n')
+        print(f"Created {version_file} with version {version}")
+        
+        return version
+    except Exception as e:
+        print(f"Warning: Could not get version from git: {e}")
+        return "0.0.1"
+
+APP_VERSION = get_app_version()
+
 block_cipher = None
 
 # Determine icon file based on platform
@@ -26,6 +53,12 @@ if not os.path.exists(icon_file):
 
 # Collect all data files from packages that need them
 datas = []
+
+# Add the generated _version.py file
+version_file_path = os.path.join('membrane_kymograph', '_version.py')
+if os.path.exists(version_file_path):
+    datas.append((version_file_path, 'membrane_kymograph'))
+    print(f"Added {version_file_path} to bundle")
 
 # Add ttkbootstrap themes and assets
 datas += collect_data_files('ttkbootstrap')
@@ -57,6 +90,11 @@ hiddenimports = [
     'tkinter.font',
     'ttkbootstrap',
     'ttkbootstrap.constants',
+    
+    # macOS native APIs for focus management
+    'AppKit',
+    'Foundation',
+    'objc',
     
     # Matplotlib backends - include ALL backends for saving different formats
     'matplotlib.backends.backend_tkagg',
@@ -171,7 +209,7 @@ exe = EXE(
     upx=True,
     console=False,  # No console window (GUI only)
     disable_windowed_traceback=False,
-    argv_emulation=False,
+    argv_emulation=True,  
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
@@ -187,4 +225,33 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='membrane-kymograph',
+)
+
+# macOS-specific: Create a proper .app bundle
+if platform.system() == 'Darwin':
+    app = BUNDLE(
+        coll,
+        name='Membrane Kymograph.app',
+        icon=icon_file,
+        bundle_identifier='org.devreoteslab.membrane-kymograph',
+        version=APP_VERSION,
+        info_plist={
+            'CFBundleDevelopmentRegion': 'en',
+            'CFBundleDisplayName': 'Membrane Kymograph',
+            'CFBundleExecutable': 'membrane-kymograph',
+            'CFBundleIdentifier': 'in.tatsatbanerjee.membrane-kymograph',
+            'CFBundleInfoDictionaryVersion': '6.0',
+            'CFBundleName': 'Membrane Kymograph',
+            'CFBundlePackageType': 'APPL',
+            'CFBundleShortVersionString': APP_VERSION,
+            'CFBundleVersion': APP_VERSION,
+            'LSMinimumSystemVersion': '10.13',
+            'NSHighResolutionCapable': True,
+            'NSRequiresAquaSystemAppearance': False,
+            'NSPrincipalClass': 'NSApplication',
+            'LSApplicationCategoryType': 'public.app-category.education',
+            'LSBackgroundOnly': False,
+            'LSUIElement': False,
+            'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
+        },
 )

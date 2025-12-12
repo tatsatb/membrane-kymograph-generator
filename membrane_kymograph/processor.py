@@ -17,6 +17,20 @@ import tifffile
 from skimage import measure, draw
 from shapely.geometry import Polygon
 from circle_fit import standardLSQ
+import platform
+
+# Configure matplotlib to use Agg backend BEFORE any matplotlib imports
+
+import matplotlib
+matplotlib.use('Agg', force=True)
+
+# Additional safeguards to prevent GUI window creation
+import os
+os.environ['MPLBACKEND'] = 'Agg'  # Set environment variable
+matplotlib.rcParams['interactive'] = False  # Disable interactive mode
+
+import matplotlib.pyplot as plt
+plt.ioff() 
 
 from .kymohelpers import smooth_boundary, interpboundary, aligninitboundary, alignboundary
 from .utils import save_data_safely, load_tiff_stack_chunked
@@ -605,9 +619,13 @@ class KymographProcessor:
     def _generate_preview(self, frame_idx: int, boundary: np.ndarray, 
                           perp_lines: Tuple[np.ndarray, np.ndarray]):
         """Generate preview image for GUI display."""
-        import matplotlib.pyplot as plt
+        # Import Figure from matplotlib.figure to avoid pyplot
+        # Agg backend is already set at module level to prevent Tk window creation
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
         
-        fig, ax = plt.subplots(figsize=(4, 3), dpi=100)
+        fig = Figure(figsize=(4, 3), dpi=100)
+        ax = fig.add_subplot(111)
         
         # Display first channel
         ax.imshow(self.channels_data[0][:, :, frame_idx], cmap='viridis')
@@ -623,10 +641,31 @@ class KymographProcessor:
         ax.set_title(f'Frame {frame_idx + 1}')
         ax.axis('off')
         
-        plt.tight_layout()
+        fig.tight_layout()
+        
+        # Save using Agg backend (non-interactive) - backend already set at module level
         preview_path = os.path.join(self.path_to_temp_save, f'frame_{frame_idx + 1}.png')
-        plt.savefig(preview_path, dpi=100, bbox_inches='tight')
-        plt.close()
+        canvas = FigureCanvasAgg(fig)
+        canvas.print_figure(preview_path, dpi=100, bbox_inches='tight')
+        
+        # Clean up figure to prevent memory leaks and window creation
+        plt_close_needed = False
+        try:
+            # Only import pyplot if absolutely necessary
+            import matplotlib.pyplot as plt
+            plt_close_needed = True
+        except:
+            pass
+        
+        fig.clf()
+        del fig, canvas
+        
+        # Close any pyplot figures if pyplot was imported
+        if plt_close_needed:
+            try:
+                plt.close('all')
+            except:
+                pass
         
         if self.image_callback:
             self.image_callback(frame_idx, preview_path)
@@ -634,9 +673,28 @@ class KymographProcessor:
     def _save_results(self, kymo_results: List[np.ndarray], colormap: str, 
                      save_formats: List[str]):
         """Save kymograph results."""
+        # Agg backend is already set at module level
+        # No need to re-configure, but ensure environment variable is set
+        import os
+        import matplotlib
+        
+        # Set environment variable to prevent Tk window creation (defensive)
+        os.environ['MPLBACKEND'] = 'Agg'
+        
+        # Backend is already Agg from module-level import, but force again to be safe
+        matplotlib.use('Agg', force=True)
+        
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
         import matplotlib.pyplot as plt
         from matplotlib.colors import LinearSegmentedColormap
         from .parulamap import cm_data
+        
+        # Ensure interactive mode is off
+        plt.ioff()
+        
+        # Additional safeguard: tell matplotlib not to show plots
+        matplotlib.rcParams['interactive'] = False
         
         # Setup colormap
         if colormap == "Default":
@@ -661,8 +719,10 @@ class KymographProcessor:
             except Exception as e:
                 logger.warning(f"Failed to save kymograph Excel files for channel {c+1}: {e}")
             
-            # Generate visualization
-            fig, ax = plt.subplots(figsize=(10, 6))
+            # Generate visualization using Figure
+            fig = Figure(figsize=(10, 6))
+            canvas = FigureCanvasAgg(fig)
+            ax = fig.add_subplot(111)
             im = ax.imshow(kymo_results[c], aspect='auto', cmap=cmap, vmin=0, vmax=1)
             ax.set_xlabel('Frame')
             
@@ -683,14 +743,21 @@ class KymographProcessor:
             
             if 'png' in save_formats:
                 png_path = os.path.join(base_path, f'kymo_channel_{c+1}.png')
-                plt.savefig(png_path, format='png', dpi=300, bbox_inches='tight')
+                fig.savefig(png_path, format='png', dpi=300, bbox_inches='tight')
                 
             if 'svg' in save_formats:
                 svg_path = os.path.join(base_path, f'kymo_channel_{c+1}.svg')
-                plt.savefig(svg_path, format='svg', dpi=300, bbox_inches='tight')
+                fig.savefig(svg_path, format='svg', dpi=300, bbox_inches='tight')
                 
             if 'pdf' in save_formats:
                 pdf_path = os.path.join(base_path, f'kymo_channel_{c+1}.pdf')
-                plt.savefig(pdf_path, format='pdf', bbox_inches='tight')
+                fig.savefig(pdf_path, format='pdf', bbox_inches='tight')
                 
-            plt.close()
+            # Close the specific figure to free memory
+            plt.close(fig)
+            # Also clear the figure to release resources
+            fig.clf()
+            del fig, canvas
+        
+        # Close all remaining figures to ensure cleanup
+        plt.close('all')

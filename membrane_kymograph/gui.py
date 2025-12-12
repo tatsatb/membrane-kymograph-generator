@@ -8,10 +8,35 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+import platform
+
+# Import version from package
+try:
+    from . import __version__
+except ImportError:
+    __version__ = "unknown"
+
+# CRITICAL: Configure matplotlib backend BEFORE any pyplot imports
+# This prevents extra window creation on macOS
 import matplotlib
 
-matplotlib.use("TkAgg")
+# Force Agg backend globally and configure to never create windows
+os.environ['MPLBACKEND'] = 'Agg'
+matplotlib.use('Agg', force=True)
+matplotlib.rcParams['interactive'] = False
+matplotlib.rcParams['figure.max_open_warning'] = 0
+
+# Prevent matplotlib from creating new Tk instances
+if platform.system() == 'Darwin':
+    os.environ['TK_SILENCE_DEPRECATION'] = '1'
+    matplotlib.rcParams['backend'] = 'Agg'
+
 import matplotlib.pyplot as plt
+plt.ioff()
+plt.close('all')
+
+# Import Figure and TkAgg backend for GUI embedding ONLY
+
 import matplotlib.image as mpimg
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -19,26 +44,65 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from .processor import KymographProcessor
 from .config import load_config, save_config
 from .correlation import KymographCorrelation
+import sys
+import platform
 
 
 class KymographGUI:
     """Main GUI class for the membrane kymograph generator."""
+    
+    _instance = None
+    _instance_created = False
+
+    def __new__(cls):
+        """Ensure only one instance of the GUI can exist."""
+        if cls._instance is None:
+            cls._instance = super(KymographGUI, cls).__new__(cls)
+            cls._instance_created = False
+        return cls._instance
 
     def __init__(self):
+        # Prevent re-initialization if already created
+        if self._instance_created:
+            return
+        
+        self._instance_created = True
+        KymographGUI._instance_created = True  # Set on class too
+        
+        # CRITICAL: Destroy any existing Tk root windows before creating new one
+        try:
+            if hasattr(tk, '_default_root') and tk._default_root is not None:
+                tk._default_root.destroy()
+                tk._default_root = None
+        except:
+            pass
+        
         self.root = tk.Tk()
+        
+        # macOS specific: bring window to front
+        if platform.system() == 'Darwin':
+            self.root.lift()
+            self.root.call('wm', 'attributes', '.', '-topmost', '1')
+            self.root.after_idle(self.root.call, 'wm', 'attributes', '.', '-topmost', '0')
+        
+        # Thread-safe messagebox flag for macOS
+        self._messagebox_queue = []
+        
         self.style = ttk.Style("superhero")
-        self.root.title("Membrane Kymograph Generator")
+        self.root.title(f"Membrane Kymograph Generator v{__version__}")
 
-
+        # Get screen dimensions
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
-
+        # Calculate window size (90% of screen height, maintaining reasonable width)
+        # Minimum: 800x600, Maximum: 1200x1000
+        # Target: 800 width, up to 90% of screen height
         max_height = int(screen_height * 0.9)
-        window_width = min(max(800, screen_width // 2), 1200)  
-        window_height = min(max(600, max_height), 1000)  
+        window_width = min(max(800, screen_width // 2), 1200)  # 800-1200px wide
+        window_height = min(max(600, max_height), 1000)  # 600-1000px tall
 
-
+        # Store dimensions for later use
         self.window_width = window_width
         self.window_height = window_height
 
@@ -48,10 +112,10 @@ class KymographGUI:
 
         self.root.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 
-        # Set minimum window size to ensure usability
+
         self.root.minsize(750, 550)
 
-        # Make window resizable
+
         self.root.resizable(True, True)
 
         # Set custom font with fallbacks
@@ -83,10 +147,50 @@ class KymographGUI:
         self.current_frame = 0
         self.n_frames = 1
         self.slider_step = 1
-        self._updating_slider = False  
+        self._updating_slider = False 
+        self.kymo_canvas = None  
 
         self.setup_gui()
         self.load_default_config()
+    
+    def _safe_messagebox(self, func, *args, **kwargs):
+        """Thread-safe wrapper for messagebox calls (macOS compatible)."""
+        if platform.system() == 'Darwin':
+            # On macOS, ensure we're on the main thread
+            try:
+                # Schedule on main thread if not already there
+                self.root.after(0, lambda: func(*args, **kwargs))
+            except:
+                # Fallback: direct call if after() fails
+                func(*args, **kwargs)
+        else:
+            # On other platforms, call directly
+            func(*args, **kwargs)
+    
+    def safe_showinfo(self, title, message):
+        """Thread-safe showinfo."""
+        self._safe_messagebox(messagebox.showinfo, title, message)
+    
+    def safe_showerror(self, title, message):
+        """Thread-safe showerror."""
+        self._safe_messagebox(messagebox.showerror, title, message)
+    
+    def safe_showwarning(self, title, message):
+        """Thread-safe showwarning."""
+        self._safe_messagebox(messagebox.showwarning, title, message)
+    
+    def safe_askyesno(self, title, message):
+        """Thread-safe askyesno - returns result via callback on macOS."""
+        if platform.system() == 'Darwin':
+            # On macOS, we need to be extra careful
+            result = [None]  # Use list to store result from nested function
+            def _ask():
+                result[0] = messagebox.askyesno(title, message)
+            self.root.after(0, _ask)
+            self.root.update()  # Process the event
+            return result[0]
+        else:
+            return messagebox.askyesno(title, message)
 
     def setup_gui(self):
         """Setup the GUI components."""
@@ -280,6 +384,9 @@ class KymographGUI:
         if filename:
             self.entry_image_path.delete(0, tk.END)
             self.entry_image_path.insert(0, filename)
+            # Force GUI update on macOS to prevent freezing
+            if platform.system() == 'Darwin':
+                self.root.update()
 
     def browse_mask(self):
         """Browse for mask file."""
@@ -290,6 +397,9 @@ class KymographGUI:
         if filename:
             self.entry_mask_path.delete(0, tk.END)
             self.entry_mask_path.insert(0, filename)
+            # Force GUI update on macOS to prevent freezing
+            if platform.system() == 'Darwin':
+                self.root.update()
 
     def run_kymograph(self):
         """Start kymograph processing."""
@@ -314,7 +424,7 @@ class KymographGUI:
             save_formats.append("pdf")
 
         if not save_formats:
-            messagebox.showwarning(
+            self.safe_showwarning(
                 "No Format Selected",
                 "Please select at least one output format (PNG, SVG, or PDF).",
             )
@@ -356,6 +466,8 @@ class KymographGUI:
                 self.n_frames = results["n_frames"]
                 self.root.after(0, self.processing_complete, results)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             self.root.after(0, self.processing_error, str(e))
 
     def check_processing_thread(self):
@@ -368,14 +480,11 @@ class KymographGUI:
     def processing_complete(self, results):
         """Handle processing completion."""
         self.update_progress("\nProcessing completed successfully!")
-        # Convert path to OS-specific format for display
         display_output_dir = os.path.normpath(results["output_dir"])
         self.update_progress(f"Results saved to: {display_output_dir}")
 
-        # Store results for later use
         self.results = results
 
-        # Update slider range and step hint
         self.n_frames = results["n_frames"]
         self.slider.config(from_=1, to=max(1, self.n_frames))
 
@@ -393,10 +502,10 @@ class KymographGUI:
             "Use the slider above the preview to view different frames."
         )
 
-        # Display kymographs in the preview area
         self._display_kymographs(results)
 
-        messagebox.showinfo(
+
+        self.safe_showinfo(
             "Success",
             "Kymograph generation completed!\n\n"
             f"Total frames: {self.n_frames}\n"
@@ -407,7 +516,7 @@ class KymographGUI:
     def processing_error(self, error_msg):
         """Handle processing error."""
         self.update_progress(f"\nERROR: {error_msg}")
-        messagebox.showerror("Processing Error", f"An error occurred:\n{error_msg}")
+        self.safe_showerror("Processing Error", f"An error occurred:\n{error_msg}")
 
     def stop_processing(self):
         """Stop current processing."""
@@ -417,6 +526,10 @@ class KymographGUI:
 
     def update_progress(self, message):
         """Update progress text (thread-safe)."""
+        self.root.after(0, self._update_progress_text, message)
+    
+    def _update_progress_text(self, message):
+        """Actually update the progress text (must run on main thread)."""
         self.text_widget.insert(tk.END, message + "\n")
         self.text_widget.see(tk.END)
 
@@ -436,7 +549,6 @@ class KymographGUI:
             widget.destroy()
 
         try:
-            # Load and display image
             img = mpimg.imread(image_path)
 
             fig = Figure(figsize=(6, 4), dpi=100)
@@ -448,17 +560,17 @@ class KymographGUI:
             canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
             canvas.draw()
             canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            
+            if platform.system() == 'Darwin':
+                self.root.update()
 
-            # Update slider position
             self._updating_slider = True
             self.slider.set(self.current_frame + 1)
             self._updating_slider = False
 
-            # Get n_frames from processor if available
             if hasattr(self.processor, "n_frames") and self.processor.n_frames > 0:
                 self.n_frames = self.processor.n_frames
 
-            # Update progress with current frame info
             self.root.title(
                 f"Membrane Kymograph Generator - Frame {self.current_frame + 1}/{self.n_frames}"
             )
@@ -472,11 +584,12 @@ class KymographGUI:
 
     def _display_kymographs(self, results):
         """Display generated kymographs in the preview area."""
-        # Clear previous content
-        for widget in self.canvas_frame.winfo_children():
-            widget.destroy()
-
         try:
+            for widget in self.canvas_frame.winfo_children():
+                widget.destroy()
+            
+            plt.close('all')
+
             import numpy as np
             from matplotlib.colors import LinearSegmentedColormap
             from .parulamap import cm_data
@@ -520,23 +633,28 @@ class KymographGUI:
 
             fig.tight_layout()
 
-            # Display in canvas
-            canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            # Display in canvas - store reference to prevent garbage collection
+            self.kymo_canvas = FigureCanvasTkAgg(fig, master=self.canvas_frame)
+            self.kymo_canvas.draw()
+            self.kymo_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
             self.update_progress("\nKymographs displayed in preview area.")
 
         except Exception as e:
-            print(f"Error displaying kymographs: {e}")
             import traceback
-
             traceback.print_exc()
+            
             # Show error message in canvas
-            label = ttk.Label(
-                self.canvas_frame, text=f"Error displaying kymographs:\n{str(e)}"
-            )
-            label.pack(pady=20)
+            self.root.after(0, lambda: self._show_display_error(str(e)))
+    
+    def _show_display_error(self, error_msg):
+        """Show error message in canvas frame (must be called on main thread)."""
+        for widget in self.canvas_frame.winfo_children():
+            widget.destroy()
+        label = ttk.Label(
+            self.canvas_frame, text=f"Error displaying kymographs:\n{error_msg}"
+        )
+        label.pack(pady=20)
 
     def on_slider_change(self, value):
         """Handle slider change."""
@@ -604,7 +722,7 @@ class KymographGUI:
             errors.append("Number of channels must be a number")
 
         if errors:
-            messagebox.showerror("Validation Error", "\n".join(errors))
+            self.safe_showerror("Validation Error", "\n".join(errors))
             return False
         return True
 
@@ -614,6 +732,9 @@ class KymographGUI:
             defaultextension=".ini",
             filetypes=[("INI files", "*.ini"), ("All files", "*.*")],
         )
+        if platform.system() == 'Darwin':
+            self.root.update()
+            
         if filename:
             config = {
                 "image_path": self.entry_image_path.get(),
@@ -626,13 +747,17 @@ class KymographGUI:
                 "save_pdf": str(self.save_pdf_var.get()),
             }
             save_config(filename, config)
-            messagebox.showinfo("Success", "Configuration saved!")
+            self.safe_showinfo("Success", "Configuration saved!")
 
     def load_config(self):
         """Load configuration from file."""
         filename = filedialog.askopenfilename(
             filetypes=[("INI files", "*.ini"), ("All files", "*.*")]
         )
+
+        if platform.system() == 'Darwin':
+            self.root.update()
+            
         if filename:
             config = load_config(filename)
             if config:
@@ -670,7 +795,7 @@ class KymographGUI:
         if is_processing:
             # Ask confirmation before destroying window
             try:
-                response = messagebox.askyesno(
+                response = self.safe_askyesno(
                     "Confirm Exit",
                     "Processing is still running. Do you want to stop and exit?",
                 )
@@ -723,7 +848,7 @@ class KymographGUI:
         file_frame.pack(padx=10, pady=10, fill=tk.X)
 
         # Kymograph smooth file
-        ttk.Label(file_frame, text="Kymograph (..._smooth.npy):").grid(
+        ttk.Label(file_frame, text="Kymograph (.npy):").grid(
             row=0, column=0, padx=5, pady=5, sticky="w"
         )
         kymo_entry = ttk.Entry(file_frame, textvariable=current_kymo_path, width=50)
@@ -761,7 +886,7 @@ class KymographGUI:
             Uses 5th-95th percentiles for better contrast.
             """
             if kymo_data is None:
-                messagebox.showwarning("No Data", "Please load a kymograph file first.")
+                self.safe_showwarning("No Data", "Please load a kymograph file first.")
                 return
 
             try:
@@ -784,7 +909,7 @@ class KymographGUI:
                         foreground="green",
                     )
                 else:
-                    messagebox.showerror(
+                    self.safe_showerror(
                         "Error", "Kymograph data is empty or all zeros."
                     )
                     return
@@ -792,7 +917,7 @@ class KymographGUI:
                 update_preview()
 
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to calculate limits:\n{e}")
+                self.safe_showerror("Error", f"Failed to calculate limits:\n{e}")
 
         ttk.Button(
             control_frame,
@@ -841,8 +966,7 @@ class KymographGUI:
         upper_limit_label = ttk.Label(control_frame, text="1.00")
         upper_limit_label.grid(row=2, column=3, padx=5, pady=5)
 
-
-
+        # Colormap selection
         ttk.Label(control_frame, text="Colormap:").grid(
             row=3, column=0, padx=5, pady=5, sticky="w"
         )
@@ -898,7 +1022,7 @@ class KymographGUI:
 
                 update_preview()
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to load data:\n{e}")
+                self.safe_showerror("Error", f"Failed to load data:\n{e}")
                 info_label.config(text=f"Error loading data: {e}", foreground="red")
 
         def update_preview():
@@ -908,10 +1032,12 @@ class KymographGUI:
 
             for widget in preview_canvas_frame.winfo_children():
                 widget.destroy()
+            
+            # Close any old figures to prevent memory leaks
+            plt.close('all')
 
             try:
                 import numpy as np
-                import matplotlib.pyplot as plt
                 from matplotlib.colors import LinearSegmentedColormap
                 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -975,12 +1101,11 @@ class KymographGUI:
         def save_kymograph():
             """Save the kymograph with current limits."""
             if kymo_data is None:
-                messagebox.showwarning("No Data", "Please load a kymograph file first.")
+                self.safe_showwarning("No Data", "Please load a kymograph file first.")
                 return
 
             try:
                 import numpy as np
-                import matplotlib.pyplot as plt
                 from matplotlib.colors import LinearSegmentedColormap
 
                 lower_limit = lower_limit_var.get()
@@ -1010,8 +1135,8 @@ class KymographGUI:
                 else:
                     cmap = plt.get_cmap(colormap)
 
-                # Create and save figure
-                fig, ax = plt.subplots(figsize=(10, 6))
+                fig = Figure(figsize=(10, 6))
+                ax = fig.add_subplot(111)
                 im = ax.imshow(
                     kymo_data,
                     aspect="auto",
@@ -1044,30 +1169,31 @@ class KymographGUI:
                 ax.set_title("Kymograph")
                 fig.colorbar(im, ax=ax, label="Normalized Intensity")
 
-                plt.tight_layout()
+                fig.tight_layout()
 
                 # Determine format from extension
                 ext = os.path.splitext(output_path)[1].lower()
                 if ext == ".pdf":
-                    plt.savefig(output_path, format="pdf", bbox_inches="tight")
+                    fig.savefig(output_path, format="pdf", bbox_inches="tight")
                 elif ext == ".svg":
-                    plt.savefig(output_path, format="svg", dpi=300, bbox_inches="tight")
+                    fig.savefig(output_path, format="svg", dpi=300, bbox_inches="tight")
                 else:
-                    plt.savefig(output_path, format="png", dpi=300, bbox_inches="tight")
+                    fig.savefig(output_path, format="png", dpi=300, bbox_inches="tight")
 
-                plt.close()
+                # Close the figure to free memory
+                plt.close(fig)
 
                 # Convert path to OS-specific format for display
                 display_path = os.path.normpath(output_path)
 
-                messagebox.showinfo(
+                self.safe_showinfo(
                     "Success",
                     f"Saved adjusted kymograph to:\n{display_path}\n\n"
                     f"Limits: [{lower_limit:.2f}, {upper_limit:.2f}]",
                 )
 
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to save kymograph:\n{e}")
+                self.safe_showerror("Error", f"Failed to save kymograph:\n{e}")
 
         # Button frame
         button_frame = ttk.Frame(control_frame)
@@ -1231,19 +1357,19 @@ class KymographGUI:
             """Run the correlation analysis."""
             # Validate inputs
             if not kymo1_path.get() or not kymo2_path.get():
-                messagebox.showwarning(
+                self.safe_showwarning(
                     "Missing Files", "Please select both kymograph files."
                 )
                 return
 
             if not os.path.exists(kymo1_path.get()):
-                messagebox.showerror(
+                self.safe_showerror(
                     "File Not Found", f"Kymograph 1 not found:\n{kymo1_path.get()}"
                 )
                 return
 
             if not os.path.exists(kymo2_path.get()):
-                messagebox.showerror(
+                self.safe_showerror(
                     "File Not Found", f"Kymograph 2 not found:\n{kymo2_path.get()}"
                 )
                 return
@@ -1300,7 +1426,7 @@ class KymographGUI:
                 display_excel = os.path.normpath(results["excel_file"])
                 display_dir = os.path.normpath(output_dir)
 
-                messagebox.showinfo(
+                self.safe_showinfo(
                     "Analysis Complete",
                     f"Correlation analysis completed successfully!\n\n"
                     f"Frames analyzed: {results['n_frames']}\n"
@@ -1313,13 +1439,13 @@ class KymographGUI:
 
             except ValueError as e:
                 log_status(f"\n✗ ERROR: {e}")
-                messagebox.showerror("Validation Error", str(e))
+                self.safe_showerror("Validation Error", str(e))
             except Exception as e:
                 log_status(f"\n✗ ERROR: {e}")
                 import traceback
 
                 traceback.print_exc()
-                messagebox.showerror("Error", f"An error occurred:\n{e}")
+                self.safe_showerror("Error", f"An error occurred:\n{e}")
 
         # Button frame
         button_frame = ttk.Frame(dialog)
@@ -1340,11 +1466,75 @@ class KymographGUI:
 
     def run(self):
         """Start the GUI."""
+        # Check if GUI was actually initialized
+        if not hasattr(self, 'root') or self.root is None:
+            return
+        
+        # macOS-specific: Ensure proper cleanup
+        def on_closing():
+            """Handle window close event - cross-platform."""
+            try:
+                # Stop any running processing
+                if hasattr(self, 'processor') and self.processor:
+                    self.processor.stop()
+                
+                if hasattr(self, 'processing_thread') and self.processing_thread and self.processing_thread.is_alive():
+                    # Wait briefly for thread to finish
+                    self.processing_thread.join(timeout=1.0)
+                
+                # Close all matplotlib figures
+                plt.close('all')
+                
+                # Destroy canvas widgets
+                if hasattr(self, 'kymo_canvas') and self.kymo_canvas:
+                    try:
+                        self.kymo_canvas.get_tk_widget().destroy()
+                    except:
+                        pass
+                
+                # Quit and destroy root window
+                try:
+                    self.root.quit()
+                except:
+                    pass
+                
+                try:
+                    self.root.destroy()
+                except:
+                    pass
+                
+            except Exception as e:
+                print(f"Error during cleanup: {e}")
+            finally:
+                # Force exit on macOS if needed
+                if platform.system() == 'Darwin':
+                    sys.exit(0)
+        
+        self.root.protocol("WM_DELETE_WINDOW", on_closing)
         self.root.mainloop()
+
+
+def _check_main_already_running():
+    """Check if main is already running using environment variable."""
+    return os.environ.get('MEMBRANE_KYMO_GUI_RUNNING') == '1'
+
+def _set_main_running():
+    """Mark main as running."""
+    os.environ['MEMBRANE_KYMO_GUI_RUNNING'] = '1'
 
 
 def main():
     """Main entry point for GUI."""
+    
+    # Prevent multiple calls to main() using environment variable
+    if _check_main_already_running():
+        return
+    
+    _set_main_running()
+    
+    if platform.system() == 'Darwin':
+        os.environ['TK_SILENCE_DEPRECATION'] = '1'
+    
     app = KymographGUI()
     app.run()
 

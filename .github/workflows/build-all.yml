@@ -25,7 +25,7 @@ jobs:
           - os: ubuntu-22.04-arm  # Ubuntu 22.04 ARM64
             platform: linux
             arch: arm64
-          - os: macos-13  # Intel Mac (x86_64)
+          - os: macos-15-intel  # Intel Mac (x86_64)
             platform: macos
             arch: x64
           - os: macos-latest  # Apple Silicon Mac (arm64)
@@ -49,10 +49,10 @@ jobs:
           echo "⚠ Warning: icons directory not found - will use default icons"
         fi
     
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v6
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     
     - name: Install system dependencies (Linux)
       if: matrix.platform == 'linux'
@@ -63,7 +63,9 @@ jobs:
     - name: Install system dependencies (macOS)
       if: matrix.platform == 'macos'
       run: |
-        brew install python-tk@3.10 create-dmg || true
+        # rsync is pre-installed on macOS runners, but ensure it's available
+        which rsync || brew install rsync
+        brew install create-dmg || true
     
     - name: Install Python dependencies
       run: |
@@ -74,12 +76,11 @@ jobs:
     - name: Pre-build matplotlib font cache (macOS)
       if: matrix.platform == 'macos'
       run: |
+        python -c "import tkinter; print(f'Tk version: {tkinter.TkVersion}, Tcl version: {tkinter.TclVersion}')"
         python -c "import matplotlib.pyplot as plt; plt.figure()" || echo "Font cache build attempted"
     
     - name: Build executable with PyInstaller (Linux/macOS)
       if: matrix.platform != 'windows'
-      env:
-        MPLBACKEND: Agg  # Use non-interactive backend to avoid font cache issues
       run: |
         pyinstaller membrane-kymograph.spec --clean --noconfirm
     
@@ -133,13 +134,8 @@ jobs:
         rm -rf "${RELEASE_NAME}"
         cd ..
     
-    - name: Create distribution archive (macOS)
-      if: matrix.platform == 'macos'
-      run: |
-        cd dist
-        ARCH=${{ matrix.arch || 'x64' }}
-        tar -czf membrane-kymograph-${{ steps.get_version.outputs.VERSION }}-macos-${ARCH}.tar.gz membrane-kymograph/
-        cd ..
+    # macOS: tar.gz is not created due to code signing and security policy issues
+    # Use DMG for macOS distribution (preserves .app bundle structure)
     
     - name: Create distribution archive (Windows)
       if: matrix.platform == 'windows'
@@ -223,7 +219,6 @@ jobs:
       with:
         name: membrane-kymograph-macos-${{ matrix.arch || 'x64' }}
         path: |
-          dist/*.tar.gz
           installers/*.dmg
         retention-days: 2
     
@@ -285,7 +280,7 @@ jobs:
         body: |
           ## Membrane Kymograph Generator - Release ${{ github.ref_name }}
           
-          Standalone executables and installers for Linux, macOS, and Windows. No Python installation is required! The software will run on both x86_64 and ARM64 architectures.
+          Standalone executables and installers for Linux, macOS, and Windows. **No Python installation is required!** The software will run on both x86_64 and ARM64/Apple silicon architectures.
           
           ### 🎁 Easy Install (Recommended)
           **Windows Installer:**
@@ -301,6 +296,7 @@ jobs:
             - Mount the DMG and drag to Applications
             - Native .app bundle
             - First launch: Right-click → Open if blocked by Gatekeeper
+            - If you encounter security warnings, please run `sudo xattr -cr /Applications/Membrane\ Kymograph.app/` in Terminal, or refer to the documentation for steps to allow the app to run.
           
           **Linux AppImage:**
           - 🐧 `membrane-kymograph-${{ github.ref_name }}-linux-x86_64.AppImage` (x64, Portable)
@@ -316,9 +312,9 @@ jobs:
 
           - **Linux x64**: `membrane-kymograph-${{ github.ref_name }}-linux-x64.tar.gz`
           - **Linux ARM64**: `membrane-kymograph-${{ github.ref_name }}-linux-arm64.tar.gz`
-          - **macOS Intel**: `membrane-kymograph-${{ github.ref_name }}-macos-x64.tar.gz`
-          - **macOS Apple Silicon**: `membrane-kymograph-${{ github.ref_name }}-macos-arm64.tar.gz`
           - **Windows**: `membrane-kymograph-${{ github.ref_name }}-windows-x64.zip`
+          
+          > **Note:** macOS distribution is DMG-only due to .app bundle requirements and code signing complexities. You can run directly from the DMG, as mentioned above. You can also use homebrew and pipx for macOS installations (see documentation).
           
           **Linux tarball includes:**
           - `install.sh` - System-wide installation script (installs to /opt, creates desktop entry)
@@ -345,7 +341,6 @@ jobs:
           ```
           
           **Other platforms:**
-          - macOS: `./membrane-kymograph/membrane-kymograph`
           - Windows: `membrane-kymograph\membrane-kymograph.exe`
           
         
