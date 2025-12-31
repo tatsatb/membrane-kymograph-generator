@@ -11,14 +11,14 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 ---
 
-## ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Homepage) for detailed documentation. 
+## ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home) for detailed documentation. 
 
 ---
 
 
 ## 🚀 Quick Start
 
-**[Download the latest release](https://github.com/tatsatb/membrane-kymograph-generator/releases)** and check out the **[Quick Start Guide](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Homepage)** to begin generating kymographs in minutes!
+**[Download the latest release](https://github.com/tatsatb/membrane-kymograph-generator/releases)** and check out the **[Quick Start Guide](https://github.com/tatsatb/membrane-kymograph-generator/wiki/)** to begin generating kymographs in minutes!
 
 **No Python installation, dependency management, or programming knowledge is required - just download, install (or extract, if you are using standalone binaries), and run!**
 
@@ -56,7 +56,7 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 - 📄 To learn more about the features, capabilities, and inner workings of the software, please read the [Preprint](#) (coming soon 🔜) .
 
-- 📚 For detailed documentation on how to use this software, please visit the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Homepage). 
+- 📚 For detailed documentation on how to use this software, please visit the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home). 
 
 - 💻 To access the source code, report issues, or contribute to the development of the software, please visit the [GitHub repository](https://github.com/tatsatb/membrane-kymograph-generator).
 
