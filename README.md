@@ -7,20 +7,26 @@
 </p>
 
 
-_Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-based application for generating kymographs from live-cell microscopy images along dynamic cell boundaries. Starting from a time-lapse image sequence and a whole cell binary mask, it automatically extracts the boundaries, corrects for the changes in the shape and size of the boundaries (using a custom algorithm), properly aligns the boundaries between different frames, samples intensities across the boundaries, and finally generates publication-quality kymographs in various formats. 
+---
+
+# ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home) for detailed documentation. 
 
 ---
 
-## ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home) for detailed documentation. 
+## ✨ Overview
+
+[![DOI](https://img.shields.io/badge/DOI-10.64898%2F2026.02.11.705379-ae363b?style=for-the-badge)](https://doi.org/10.64898/2026.02.11.705379) 
+
+
+_Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-based application for generating kymographs from live-cell microscopy images along dynamic cell boundaries. Starting from a time-lapse image sequence and a whole cell binary mask, it automatically extracts the boundaries, corrects for the changes in the shape and size of the boundaries (using a custom algorithm), properly aligns the boundaries between different frames, samples intensities across the boundaries, and finally generates publication-quality kymographs in various formats. It also provides a built-in correlation analysis tool, options for customizations and downstream analyses, and a native Python API for advanced users.
 
 ---
-
 
 ## 🚀 Quick Start
 
-**[Download the latest release](https://github.com/tatsatb/membrane-kymograph-generator/releases)** and check out the **[Quick Start Guide](https://github.com/tatsatb/membrane-kymograph-generator/wiki/)** to begin generating kymographs in minutes!
+**[Download the latest release](https://github.com/tatsatb/membrane-kymograph-generator/releases)** and check out the **[Quick Start Guide](https://github.com/tatsatb/membrane-kymograph-generator/wiki/QuickStart)** to begin generating kymographs in minutes!
 
-**No Python installation, dependency management, or programming knowledge is required - just download, install (or extract, if you are using standalone binaries), and run!**
+**No Python installation, dependency management, or programming knowledge is required - just download, install (or extract, if you are using portable binaries), and run!**
 
 ---
 
@@ -54,7 +60,7 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 - 🔽 To download the latest version of the software, please visit the [Releases](https://github.com/tatsatb/membrane-kymograph-generator/releases).
 
-- 📄 To learn more about the features, capabilities, and inner workings of the software, please read the [Preprint](#) (coming soon 🔜) .
+- 📄 To learn more about the features, capabilities, and inner workings of the software, please read the [Preprint](https://doi.org/10.64898/2026.02.11.705379 ).
 
 - 📚 For detailed documentation on how to use this software, please visit the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home). 
 
@@ -67,15 +73,17 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 ## 📖 Citation
 
-If you use this software in your research, please cite:
+If you use this software in your research, please cite the following preprint:
 
-> Membrane Kymograph Generator: A cross-platform GUI software for automated generation and analysis of kymographs along dynamic cell boundaries. [Preprint coming soon 🔜]
+
+> Tatsat Banerjee, Bedri Abubaker-Sharif, Peter N Devreotes, Pablo A Iglesias. "Membrane Kymograph Generator: A cross-platform GUI software for automated generation and analysis of kymographs along dynamic cell boundaries", bioRxiv, 2026, 2026.02.11.705379. DOI: [10.64898/2026.02.11.705379](https://doi.org/10.64898/2026.02.11.705379).
 
 ---
 
 ## 🙏 Acknowledgments
 
-Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all members of both labs for their valuable feedback during the development and testing phases.
+Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all the members of both labs for their valuable feedback during the development and testing phases. For more details on the acknowledgments, please see the [Preprint](https://doi.org/10.64898/2026.02.11.705379). 
+
 
 ---
 
