@@ -15,7 +15,14 @@
 
 ## ✨ Overview
 
-[![DOI](https://img.shields.io/badge/DOI-10.64898%2F2026.02.11.705379-ae363b?style=for-the-badge)](https://doi.org/10.64898/2026.02.11.705379) 
+
+[![DOI](https://img.shields.io/badge/DOI-10.64898%2F2026.02.11.705379-bd2736?style=for-the-badge)](https://doi.org/10.64898/2026.02.11.705379)
+[![GitHub Release](https://img.shields.io/github/v/release/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=blueviolet)](https://github.com/tatsatb/membrane-kymograph-generator/releases)
+[![Documentation](https://img.shields.io/badge/Wiki-Documentation-forestgreen?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://github.com/tatsatb/membrane-kymograph-generator/wiki)
+[![PyPI](https://img.shields.io/pypi/v/membrane-kymograph?style=for-the-badge&color=blue&logo=python&logoColor=white)](https://pypi.org/project/membrane-kymograph/)
+[![License](https://img.shields.io/github/license/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=red)](https://github.com/tatsatb/membrane-kymograph-generator/blob/main/LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/tatsatb/membrane-kymograph-generator/tests.yml?label=Tests&style=for-the-badge)](https://github.com/tatsatb/membrane-kymograph-generator/actions/workflows/tests.yml)
+
 
 
 _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-based application for generating kymographs from live-cell microscopy images along dynamic cell boundaries. Starting from a time-lapse image sequence and a whole cell binary mask, it automatically extracts the boundaries, corrects for the changes in the shape and size of the boundaries (using a custom algorithm), properly aligns the boundaries between different frames, samples intensities across the boundaries, and finally generates publication-quality kymographs in various formats. It also provides a built-in correlation analysis tool, options for customizations and downstream analyses, and a native Python API for advanced users.
