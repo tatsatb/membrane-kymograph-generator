@@ -359,7 +359,26 @@ class KymographProcessor:
 
         BB_original = np.array([BB0, BB1, BB2, BB3])
         BB = BB_original + np.array([-1, -1, 2, 2])
+
+        H, W = image_mod_cell.shape
+        BB[0] = max(0, BB[0])
+        BB[1] = max(0, BB[1])
+        BB[2] = min(H, BB[2])
+        BB[3] = min(W, BB[3])
         TMP_BW = image_mod_cell[BB[0]:BB[2], BB[1]:BB[3]]
+
+
+        pad_top    = max(0, 1 - BB_original[0])
+        pad_left   = max(0, 1 - BB_original[1])
+        pad_bottom = max(0, (BB_original[2] + 2) - H)
+        pad_right  = max(0, (BB_original[3] + 2) - W)
+        if pad_top or pad_left or pad_bottom or pad_right:
+            TMP_BW = np.pad(
+                TMP_BW,
+                ((pad_top, pad_bottom), (pad_left, pad_right)),
+                mode='constant',
+                constant_values=False,
+            )
 
         boundaries = measure.find_contours(TMP_BW, 0, fully_connected='high')
 
