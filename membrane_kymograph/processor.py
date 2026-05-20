@@ -261,22 +261,21 @@ class KymographProcessor:
             
     def _process_boundaries(self, mask_path: str):
         """Process cell boundaries from mask."""
-        # Load mask data
+        # Load the mask with an explicit per-page key so the result is always
+        # (T, H, W).
         with tifffile.TiffFile(mask_path) as tif:
             mask_frames = len(tif.pages)
-            mask_data = tif.asarray()
-        
-        # Ensure mask_data is in (frames, height, width) format
-        if len(mask_data.shape) == 2:
-            # Single frame - add frame dimension
-            mask_data = mask_data[np.newaxis, :, :]
-        elif len(mask_data.shape) == 3:
+            if mask_frames == 0:
+                raise ValueError(f"Mask TIFF file contains no pages: {mask_path}")
+            page_shape = tif.pages[0].shape
+            if len(page_shape) != 2:
+                raise ValueError(
+                    f"Each mask TIFF page must be a 2D image, got shape "
+                    f"{page_shape}. Please provide a binary mask saved "
+                    f"as a multi-page TIFF (one page per frame)."
+                )
+            mask_data = tif.asarray(key=range(mask_frames))
 
-            if mask_data.shape[0] == mask_frames:
-                pass  # Already in (frames, height, width)
-            else:
-                mask_data = np.transpose(mask_data, (2, 0, 1))
-            
         # Initialize storage
         boundary_final = [None] * self.n_frames
         smooth_boundary_final = [None] * self.n_frames
