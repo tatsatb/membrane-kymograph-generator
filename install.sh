@@ -71,7 +71,7 @@ mkdir -p /usr/share/applications
 
 cat > "$DESKTOP_FILE" << 'EOF'
 [Desktop Entry]
-Version=0.0.1
+Version=0.0.6
 Type=Application
 Name=Membrane Kymograph Generator
 Comment=A GUI-based cross-platform tool for generating membrane kymographs from live-cell time-lapse microscopy images
