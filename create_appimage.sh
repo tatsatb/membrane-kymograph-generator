@@ -189,7 +189,7 @@ chmod +x "${APPDIR}/AppRun"
 APPIMAGETOOL="./appimagetool-${APPIMAGETOOL_ARCH}.AppImage"
 if [ ! -f "${APPIMAGETOOL}" ]; then
     echo "Downloading appimagetool for ${APPIMAGETOOL_ARCH}..."
-    wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${APPIMAGETOOL_ARCH}.AppImage" -O "${APPIMAGETOOL}"
+    wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${APPIMAGETOOL_ARCH}.AppImage" -O "${APPIMAGETOOL}"
     chmod +x "${APPIMAGETOOL}"
 fi
 
