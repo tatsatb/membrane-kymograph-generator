@@ -21,6 +21,7 @@
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-forestgreen?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://github.com/tatsatb/membrane-kymograph-generator/wiki)
 [![PyPI](https://img.shields.io/pypi/v/membrane-kymograph?style=for-the-badge&color=blue&logo=python&logoColor=white)](https://pypi.org/project/membrane-kymograph/)
 [![License](https://img.shields.io/github/license/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=red)](https://github.com/tatsatb/membrane-kymograph-generator/blob/main/LICENSE)
+[![Zenodo](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.20318834-024b79?style=for-the-badge&logo=zenodo&logoColor=white)](https://doi.org/10.5281/zenodo.20318834)
 [![Tests](https://img.shields.io/github/actions/workflow/status/tatsatb/membrane-kymograph-generator/tests.yml?label=Tests&style=for-the-badge)](https://github.com/tatsatb/membrane-kymograph-generator/actions/workflows/tests.yml)
 
 
