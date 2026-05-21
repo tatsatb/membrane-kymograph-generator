@@ -304,7 +304,7 @@ jobs:
             - Make executable: `chmod +x membrane-kymograph-*.AppImage`
             - Run directly: `./membrane-kymograph-*.AppImage`
             - No installation needed, runs in all major Linux distributions (Ubuntu, Debian, Fedora, Arch Linux etc.).
-            - Note: If you have never used AppImage before in your system and having issues running our software, you may need to install FUSE (something like `libfuse2` package). For Ubuntu, please just use `sudo apt-get install libfuse2`. For specific instructions on other distros, please see [AppImage documentation](https://github.com/appimage/appimagekit/wiki/fuse).
+            - Note: If you have never used AppImage before in your system and having issues running our software, you may need to install FUSE (something like `libfuse2` package). For Ubuntu, please just use `sudo apt-get install libfuse2`. For specific instructions on other distros, please see [AppImage documentation](https://github.com/appimage/appimagekit/wiki/fuse). Please note that The current version of membrane-kymograph-generator supports both fuse2 and fuse3.
           
           ### 📦 Manual Archives (Portable, slightly advanced)
           

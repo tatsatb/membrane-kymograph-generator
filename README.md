@@ -9,7 +9,7 @@
 
 ---
 
-# ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home) for detailed documentation. 
+# ✅ 📚 Please visit the [Wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/) for detailed documentation. 
 
 ---
 
