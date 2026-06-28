@@ -16,9 +16,10 @@
 ## ✨ Overview
 
 
-[![DOI](https://img.shields.io/badge/DOI-10.64898%2F2026.02.11.705379-bd2736?style=for-the-badge)](https://doi.org/10.64898/2026.02.11.705379)
-[![GitHub Release](https://img.shields.io/github/v/release/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=blueviolet)](https://github.com/tatsatb/membrane-kymograph-generator/releases)
+[![DOI](https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtag400-3b7ba0?style=for-the-badge)](https://doi.org/10.1093/bioinformatics/btag400)
+[![PMID](https://img.shields.io/badge/PMID-42316814-bd2736?style=for-the-badge)](https://pubmed.ncbi.nlm.nih.gov/42316814/)
 [![Documentation](https://img.shields.io/badge/Wiki-Documentation-forestgreen?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://github.com/tatsatb/membrane-kymograph-generator/wiki)
+[![GitHub Release](https://img.shields.io/github/v/release/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=blueviolet)](https://github.com/tatsatb/membrane-kymograph-generator/releases)
 [![PyPI](https://img.shields.io/pypi/v/membrane-kymograph?style=for-the-badge&color=blue&logo=python&logoColor=white)](https://pypi.org/project/membrane-kymograph/)
 [![License](https://img.shields.io/github/license/tatsatb/membrane-kymograph-generator?style=for-the-badge&color=red)](https://github.com/tatsatb/membrane-kymograph-generator/blob/main/LICENSE)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.20318834-024b79?style=for-the-badge&logo=zenodo&logoColor=white)](https://doi.org/10.5281/zenodo.20318834)
@@ -68,9 +69,9 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 - 🔽 To download the latest version of the software, please visit the [Releases](https://github.com/tatsatb/membrane-kymograph-generator/releases).
 
-- 📄 To learn more about the features, capabilities, and inner workings of the software, please read the [Preprint](https://doi.org/10.64898/2026.02.11.705379 ).
+- 📄 To learn more about the features, capabilities, and inner workings of the software, please read the [publication](https://doi.org/10.1093/bioinformatics/btag400).
 
-- 📚 For detailed documentation on how to use this software, please visit the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/Home). 
+- 📚 For detailed documentation on how to use this software, please visit the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki/). 
 
 - 💻 To access the source code, report issues, or contribute to the development of the software, please visit the [GitHub repository](https://github.com/tatsatb/membrane-kymograph-generator).
 
@@ -81,16 +82,17 @@ _Membrane Kymograph Generator_, is a cross-platform, free and open-source, GUI-b
 
 ## 📖 Citation
 
-If you use this software in your research, please cite the following preprint:
+If you use this software in your research, please cite the following publication:
 
+> Tatsat Banerjee, Bedri Abubaker-Sharif, Peter N Devreotes, Pablo A Iglesias, "Membrane Kymograph Generator: a cross-platform GUI software for automated generation and analysis of kymographs along dynamic cell boundaries", _Bioinformatics_, Volume 42, Issue 6, btag400 (2026). DOI: [10.1093/bioinformatics/btag400](https://doi.org/10.1093/bioinformatics/btag400). PMID: [42316814](https://pubmed.ncbi.nlm.nih.gov/42316814/).
 
-> Tatsat Banerjee, Bedri Abubaker-Sharif, Peter N Devreotes, Pablo A Iglesias. "Membrane Kymograph Generator: A cross-platform GUI software for automated generation and analysis of kymographs along dynamic cell boundaries", bioRxiv, 2026, 2026.02.11.705379. DOI: [10.64898/2026.02.11.705379](https://doi.org/10.64898/2026.02.11.705379).
+Please see the [wiki](https://github.com/tatsatb/membrane-kymograph-generator/wiki) for BibTeX citation information.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all the members of both labs for their valuable feedback during the development and testing phases. For more details on the acknowledgments, please see the [Preprint](https://doi.org/10.64898/2026.02.11.705379). 
+Developed at the Iglesias Lab and Devreotes Lab at Johns Hopkins University for analyzing membrane dynamics in dynamic cell physiological processes. We thank all the members of both labs for their valuable feedback during the development and testing phases. For more details on the acknowledgments, please see the [publication](https://doi.org/10.1093/bioinformatics/btag400). 
 
 
 ---

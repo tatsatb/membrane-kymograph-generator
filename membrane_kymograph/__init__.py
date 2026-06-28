@@ -2,6 +2,9 @@
 Membrane Kymograph Generator
 
 A tool for automatically generating kymographs along dynamic cell boundaries from multichannel live-cell microscopy images.
+
+For more information, please see the GitHub repository (https://github.com/tatsatb/membrane-kymograph-generator) and the related publication (https://doi.org/10.1093/bioinformatics/btag400).
+
 """
 
 import subprocess
